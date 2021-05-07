@@ -81,7 +81,7 @@ impl Deck {
     }
 
     fn as_ids_no_jokers(& self) -> Vec<u8> {
-        (2 .. self.cards.len() as u8).collect()
+        (0 .. self.cards.len() as u8).collect()
     }
 
     fn get_card(& self, id: & u8) -> Option<&Card> {
@@ -200,15 +200,15 @@ impl<'a> Game24<'a> {
     }
 
     fn turn(&mut self, stdin: &mut Stdin, stdout: &mut MouseTerminal<RawTerminal<Stdout>>) -> GameResult{
-        write!(stdout, "{}{}turn: {}", termion::clear::All, termion::cursor::Goto(1, 1), self.turn_num).unwrap();
+        write!(stdout, "{}{}turn: {} (push 'r' for next turn)", termion::clear::All, termion::cursor::Goto(1, 1), self.turn_num).unwrap();
         let mut result =  GameResult::Gaming;
         if  ! self.hidden_cards.is_empty()
             &&self.visible_cards.add_n_from(&mut self.hidden_cards, 4) {
             let mut positions = Vec::<(u16, u16)>::new();
             positions.push((2,2));
-            positions.push((16,2));
-            positions.push((2,10));
-            positions.push((16,10));
+            positions.push((20,2));
+            positions.push((2,12));
+            positions.push((20,12));
             let mut pos_iter = positions.iter();
             for card_id in self.visible_cards.card_ids.iter() {
                 if let Some(pos) = pos_iter.next() {
