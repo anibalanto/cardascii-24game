@@ -1,4 +1,4 @@
-# cardascii-24game for all teclas
+# cardascii-24game for all teclas persons
 
 This game have the mission to make diversion for Anibal Fernando Antonelli when he draw cards with chars.
 
