@@ -2,8 +2,11 @@ mod common;
 mod client;
 mod server;
 
-#[macro_use]
-extern crate bincode;
+//#[macro_use]
+//extern crate serde_derive;
+
+//#[macro_use]
+//extern crate bincode;
 
 use message_io::network::{Transport, ToRemoteAddr};
 

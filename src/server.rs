@@ -4,6 +4,7 @@ use message_io::network::{NetEvent, Transport, Endpoint};
 use message_io::node::{self};
 
 use std::collections::{HashMap};
+use std::iter::FromIterator;
 use std::net::{SocketAddr};
 
 struct ClientInfo {
@@ -47,7 +48,35 @@ pub fn run(transport: Transport, addr: SocketAddr) {
                     let output_data = bincode::serialize(&message).unwrap();
                     handler.network().send(endpoint, &output_data);
                 },
-                FromClientMessage::Answer => ()
+                FromClientMessage::Game => {
+                    println!("Begin the game!");
+                    let message = FromServerMessage::TurnBegin;
+                    let output_data = bincode::serialize(&message).unwrap();
+                    handler.network().send(endpoint, &output_data);
+                },
+                FromClientMessage::Answer(entry) => {
+                    let answer = String::from_iter(entry);
+                    let r = meval::eval_str(&answer);
+                    let you_win = match r {
+                        Ok(result) => {
+                            println!("The answer is '{} = {}'", answer, result);
+                            result == 24.0
+                        }
+                        _ => {
+                            println!("The answer is '{}'", answer);
+                            false
+                        }
+                    };
+                    let message = if you_win {
+                        FromServerMessage::TurnYouWin
+                    } else {
+                        FromServerMessage::TurnOtherWin
+                    };
+
+                    let output_data = bincode::serialize(&message).unwrap();
+                    handler.network().send(endpoint, &output_data);
+                }
+
             }
         }
         NetEvent::Disconnected(endpoint) => {

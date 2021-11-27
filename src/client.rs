@@ -29,18 +29,26 @@ pub fn run(transport: Transport, remote_addr: RemoteAddr) {
                 }
             }
             NetEvent::Accepted(_, _) => unreachable!(), // Only generated when a listener accepts
-            NetEvent::Message(_, input_data) => {
+            NetEvent::Message(endpoint , input_data) => {
                 let message: FromServerMessage = bincode::deserialize(&input_data).unwrap();
                 match message {
                     FromServerMessage::Pong(count) => {
-                        println!("Pong from server: {} times", count)
-                    }
+                        println!("Pong from server: {} times", count);
+                        let message = FromClientMessage::Game;
+                        let output_data = bincode::serialize(&message).unwrap();
+                        handler.network().send(endpoint, &output_data);
+                    },
                     FromServerMessage::UnknownPong => println!("Pong from server"),
                     
-                    FromServerMessage::TurnBegin |
-                    FromServerMessage::TurnYouWin |
-                    FromServerMessage::TurnOtherWin | 
-                    FromServerMessage::TurnTied  => ()
+                    FromServerMessage::TurnBegin => {
+                        let message = FromClientMessage::Answer(['2', '*', '1', '2']);
+                        let output_data = bincode::serialize(&message).unwrap();
+                        handler.network().send(endpoint, &output_data);
+                    },
+
+                    FromServerMessage::TurnYouWin => println!("I'm the winner! :)"),
+                    FromServerMessage::TurnOtherWin => println!("I lose :("),
+                    FromServerMessage::TurnTied => println!("We tied! :|")
                 }
             }
             NetEvent::Disconnected(_) => {
