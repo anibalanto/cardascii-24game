@@ -1,6 +1,11 @@
 mod common;
 mod client;
 mod server;
+mod terminal;
+mod command;
+mod core_cards;
+mod answer_analizer;
+//mod answer_numbers;
 
 //#[macro_use]
 //extern crate serde_derive;

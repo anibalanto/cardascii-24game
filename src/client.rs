@@ -1,9 +1,16 @@
-use super::common::{FromServerMessage, FromClientMessage};
+use std::io;
+use std::io::Write;
+
+use super::common::{AnswerData, FromServerMessage, FromClientMessage, BYTECOUNT};
+use crate::terminal::VisualDeck;
 
 use message_io::network::{NetEvent, Transport, RemoteAddr};
 use message_io::node::{self, NodeEvent};
 
 use std::time::{Duration};
+use termion::screen::AlternateScreen;
+use crate::command::get_command;
+use crate::common::{Card, CARDCOUNT, CardType, HandCardData};
 
 enum Signal {
     Greet, // This is a self event called every second.
@@ -11,6 +18,40 @@ enum Signal {
 }
 
 pub fn run(transport: Transport, remote_addr: RemoteAddr) {
+    let mut deck = VisualDeck::new();
+    let default_hand: HandCardData = [ Card{ _type : CardType::Joker, value : 0} ; CARDCOUNT];
+    let mut actual_hand = default_hand;
+    let stdin = io::stdin();
+
+
+
+
+    let mut answer_data = | hand : & HandCardData |{
+        let mut screen = AlternateScreen::from(io::stdout());
+        //write!(screen, "Writing to alternat(iv)e screen!").unwrap();
+        screen.flush().unwrap();
+
+
+        //let mut stdin = termion::async_stdin().keys();
+
+        let mut buffer: AnswerData = [' '; BYTECOUNT];
+
+        let mut opt_answer : Option<String> =  get_command(& mut deck, hand);
+
+        for (i,ch) in opt_answer.unwrap().chars().enumerate() {
+            if i < BYTECOUNT {
+                buffer[i] = ch;
+            } else {
+                break;
+            }
+        }
+        let message = FromClientMessage::TurnAnswer(buffer);
+        bincode::serialize(&message).unwrap()
+
+    };
+
+
+
     let (handler, listener) = node::split();
 
     let (server_id, local_addr) =
@@ -32,23 +73,33 @@ pub fn run(transport: Transport, remote_addr: RemoteAddr) {
             NetEvent::Message(endpoint , input_data) => {
                 let message: FromServerMessage = bincode::deserialize(&input_data).unwrap();
                 match message {
-                    FromServerMessage::Pong(count) => {
-                        println!("Pong from server: {} times", count);
-                        let message = FromClientMessage::Game;
+                    FromServerMessage::Pong(_) => {
+                        let message = FromClientMessage::NewTurn;
                         let output_data = bincode::serialize(&message).unwrap();
                         handler.network().send(endpoint, &output_data);
                     },
                     FromServerMessage::UnknownPong => println!("Pong from server"),
                     
-                    FromServerMessage::TurnBegin => {
-                        let message = FromClientMessage::Answer(['2', '*', '1', '2']);
-                        let output_data = bincode::serialize(&message).unwrap();
-                        handler.network().send(endpoint, &output_data);
+                    FromServerMessage::TurnBegin(hand) => {
+                        actual_hand = hand;
+                        handler.network().send(endpoint, & mut answer_data(&hand) );
+
                     },
 
-                    FromServerMessage::TurnYouWin => println!("I'm the winner! :)"),
-                    FromServerMessage::TurnOtherWin => println!("I lose :("),
-                    FromServerMessage::TurnTied => println!("We tied! :|")
+                    FromServerMessage::TurnContinue => {
+                        let mut screen = AlternateScreen::from(io::stdout());
+                        write!(screen, "turn continue").unwrap();
+                        handler.network().send(endpoint, & mut answer_data(&actual_hand) );
+                    }
+
+                    FromServerMessage::TurnEnd(_) =>
+                        {
+                            let mut screen = AlternateScreen::from(io::stdout());
+                            write!(screen, "turn end!").unwrap();
+                            let message = FromClientMessage::NewTurn;
+                            let output_data = bincode::serialize(&message).unwrap();
+                            handler.network().send(endpoint, &output_data);
+                        },
                 }
             }
             NetEvent::Disconnected(_) => {
