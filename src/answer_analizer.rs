@@ -71,9 +71,9 @@ pub fn analize(i: &str) -> IResult<&str, i64> {
         )(i)
     };
 
-    expr = *expr2;
+    //expr = *expr2;
 
-    expr(i)
+    expr2(i)
 
 }
 

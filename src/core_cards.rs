@@ -3,7 +3,7 @@ extern crate termion;
 use std::io::{stdin, Stdin, stdout, Write};
 use rand::prelude::SliceRandom;
 use rand::thread_rng;
-use serde::{Serialize, Deserialize};
+
 
 use super::common::{Card, CardType};
 use self::termion::input::{MouseTerminal, TermRead};
