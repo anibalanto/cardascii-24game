@@ -23,9 +23,6 @@ pub fn run(transport: Transport, remote_addr: RemoteAddr) {
     let mut actual_hand = default_hand;
     let stdin = io::stdin();
 
-
-
-
     let mut answer_data = | hand : & HandCardData |{
         let mut screen = AlternateScreen::from(io::stdout());
         //write!(screen, "Writing to alternat(iv)e screen!").unwrap();
@@ -66,7 +63,8 @@ pub fn run(transport: Transport, remote_addr: RemoteAddr) {
                     handler.signals().send(Signal::Greet);
                 }
                 else {
-                    println!("Can not connect to server at {} by {}", remote_addr, transport)
+                    println!("Can not connect to server at {} by {}", remote_addr, transport);
+                    handler.stop();
                 }
             }
             NetEvent::Accepted(_, _) => unreachable!(), // Only generated when a listener accepts

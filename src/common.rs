@@ -30,7 +30,7 @@ pub type HandCardData = [Card; CARDCOUNT];
 pub enum FromClientMessage {
     Ping,
     NewTurn,
-    TurnAnswer(AnswerData),
+    TurnAnswer(usize, AnswerData),
 }
 
 #[derive(Serialize, Deserialize)]
@@ -46,6 +46,7 @@ pub enum FromServerMessage {
     Pong(usize),            // Used for connection oriented protocols
     UnknownPong,            // Used for non-connection oriented protocols
     TurnEnd(TurnEndType),             // Used for bring a good notice
+    SendMsg(str),
     TurnContinue,               // Used for bring a bad notice for all
     TurnBegin(HandCardData),   // Used for bring the cards
 

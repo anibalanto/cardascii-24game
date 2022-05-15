@@ -76,7 +76,7 @@ pub fn run(transport: Transport, addr: SocketAddr) {
                         handler.network().send(endpoint, &output_data);
                     }
                 }
-                FromClientMessage::TurnAnswer(entry) => {
+                FromClientMessage::TurnAnswer(user_id, entry) => {
                     let answer = String::from_iter(entry);
                     println!("user:say >> {}", answer);
 
@@ -84,43 +84,19 @@ pub fn run(transport: Transport, addr: SocketAddr) {
 
 
 
-
+                    // FIXME llevar esto tambien a game::make_answer
                     let mut program = Interpreter::from(answer.as_str());
 
                     if let Ok( result  ) = program.interpret() { //answer_analizer::analize(&answer) {
                         println!("@ {}", result);
                         if result == 24.0 {
-
-                            // verify that values used in the answer match
-                            // with the cards
-                            let mut cards_vec: Vec<usize>   = cards.iter().map(|card| card.value.to_usize()).collect();
-
-                            let mut lexer = Lexer::from(answer.as_str());
-
-                            while let Ok(token) =  lexer.next_token() {
-                                if token == Token::EOF {
-                                    break;
-                                }
-                                if let Token::NUMBER(n)  = token {
-                                    print!("num : {} => ", n);
-
-                                    if let Some(i) = cards_vec.iter().position( |x| *x == n ) {
-                                        cards_vec.remove(i);
-                                        println!("use a card!");
-                                    } else {
-                                        println!("don't use a card :(");
-                                    }
-                                }
-                            }
-                            if cards_vec.is_empty() {
-                                game.end_turn(TurnResult::Winner(0));
-                                message = FromServerMessage::TurnEnd(TurnEndType::YouWin)
-                            } else {
-                                println!("don't use this cards {cards_vec:?}", );
+                            message = match game.make_answer(user_id, answer) {
+                                Ok(()) =>       FromServerMessage::TurnEnd(TurnEndType::YouWin),
+                                Err(msgErr) =>  FromServerMessage::SendMsg(msgErr)
                             }
                         }
                     }
-
+                    println!("{message}");
                     let output_data = bincode::serialize(&message).unwrap();
                     handler.network().send(endpoint, &output_data);
                 }

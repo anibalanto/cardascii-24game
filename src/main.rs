@@ -18,35 +18,33 @@ use message_io::network::{Transport, ToRemoteAddr};
 use std::net::{ToSocketAddrs};
 
 const HELP_MSG: &str = concat!(
-    "Usage: ping-pong server (tcp | udp | ws) <port>\n",
-    "       pong-pong client (tcp | udp | ws) (<ip>:<port> | url)"
+    "Usage: cardascii-24game table <port>\n",
+    "       cardascii-24game play (<ip-table>:<port> | url)"
 );
 
 pub fn main() {
     let args: Vec<String> = std::env::args().collect();
 
-    let transport = match args.get(2).unwrap_or(&"".into()).as_ref() {
-        "ws" => Transport::Ws,
-        _ => return println!("{}", HELP_MSG),
-    };
-
     match args.get(1).unwrap_or(&"".into()).as_ref() {
-        "client" => match args.get(3) {
+        "play" => match args.get(2) {
             Some(remote_addr) => {
                 let remote_addr = remote_addr.to_remote_addr().unwrap();
-                client::run(transport, remote_addr);
+                client::run(Transport::Ws, remote_addr);
+                return;
             }
-            None => return println!("{}", HELP_MSG),
+            None => (),
         },
-        "server" => {
-            match args.get(3).unwrap_or(&"".into()).parse() {
+        "table" => {
+            match args.get(2).unwrap_or(&"".into()).parse() {
                 Ok(port) => {
                     let addr = ("0.0.0.0", port).to_socket_addrs().unwrap().next().unwrap();
-                    server::run(transport, addr);
+                    server::run(Transport::Ws, addr);
+                    return;
                 }
-                Err(_) => return println!("{}", HELP_MSG),
+                Err(_) => () ,
             };
         }
-        _ => return println!("{}", HELP_MSG),
+        _ => (),
     }
+    return println!("{HELP_MSG}");
 }

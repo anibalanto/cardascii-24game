@@ -3,6 +3,7 @@ extern crate termion;
 use std::io::{stdin, Stdin, stdout, Write};
 use rand::prelude::SliceRandom;
 use rand::thread_rng;
+use rcalc::{Lexer, Token};
 
 
 use super::common::{Card, CardType};
@@ -75,6 +76,10 @@ impl Deck {
         }
     }
 
+    fn get_cards_from_stack(& self, stack: & CardStack) -> Vec<&Card> {
+        stack.card_ids.iter().map( |card_id| self.get_card(card_id) ).collect()
+    }
+
 }
 
 pub struct CardStack {
@@ -133,7 +138,7 @@ pub struct Game24{
     //player:             u8,
     deck:               Deck,
     hidden_cards:       CardStack,
-    visible_cards:  CardStack,
+    visible_cards:      CardStack,
     players_cards:      Vec<CardStack>,
     accumulate_cards:   CardStack,
     operation:          String,
@@ -237,6 +242,34 @@ impl Game24 {
             }
         }*/
         turn
+    }
+
+    pub fn make_answer(&mut self, user: usize, answer: String) -> Result<(), Err<str> > {
+        let mut lexer = Lexer::from(answer.as_str());
+
+        let mut cards_vec   = self.deck.get_cards_from_stack(visible_cards);
+
+        while let Ok(token) =  lexer.next_token() {
+            if token == Token::EOF {
+                break;
+            }
+            if let Token::NUMBER(n)  = token {
+                print!("num : {} => ", n);
+
+                if let Some(i) = cards_vec.iter().position( |x| *x == n ) {
+                    cards_vec.remove(i);
+                    println!("use a card!");
+                } else {
+                    println!("don't use a card :(");
+                }
+            }
+        }
+        if cards_vec.is_empty() {
+            game.end_turn(TurnResult::Winner(0));
+            Result::Ok(())
+        } else {
+            Result::Err("don't use this cards {cards_vec:?}")
+        }
     }
 
     fn resolve_operation(& self) -> Option<u16> {
